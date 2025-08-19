@@ -1,20 +1,41 @@
 import 'package:flutter/material.dart';
+import 'api_service.dart'; // ApiService 임포트
 
 void main() {
   runApp(MyApp());
 }
 
 class Task {
+  String? id; // API에서 사용하는 ID (Nullable로 변경 또는 기본값 설정)
   String title;
-  bool isDone;
+  String status;
 
-  Task({required this.title, this.isDone = false});
+  Task({this.id, required this.title, this.status = 'Not Started'});
+
+  // API 응답(JSON)을 Task 객체로 변환하는 factory 생성자
+  factory Task.fromJson(Map<String, dynamic> json) {
+    return Task(
+      id: json['_id'] as String?, // API 필드명에 맞게 수정
+      title: json['title'] as String,
+      status: json['status'] as String? ?? 'Not Started', // API 필드명 및 기본값 설정
+    );
+  }
+
+  // Task 객체를 JSON으로 변환하는 메서드 (POST, PUT 요청 시 사용)
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id, // id는 서버에서 생성될 경우 보내지 않을 수 있음
+      'title': title,
+      'status': status,
+    };
+  }
 }
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: '오늘의 할 일',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -30,38 +51,136 @@ class TodoListScreen extends StatefulWidget {
 }
 
 class _TodoListScreenState extends State<TodoListScreen> {
-  final List<Task> _tasks = [];
+  List<Task> _tasks = []; // API에서 받아온 데이터를 저장할 리스트
   final TextEditingController _taskController = TextEditingController();
+  final ApiService _apiService = ApiService(); // ApiService 인스턴스 생성
+  bool _isLoading = true; // 로딩 상태
+  String? _errorMessage; // 오류 메시지
 
-  void _addTask(String title) {
+  @override
+  void initState() {
+    super.initState();
+    _fetchTasks(); // 화면이 처음 로드될 때 할 일 목록을 가져옵니다.
+  }
+
+  Future<void> _fetchTasks() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final tasks = await _apiService.getTasks();
+      setState(() {
+        _tasks = tasks;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+      // 사용자에게 오류를 알리는 스낵바 등을 표시할 수 있습니다.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('할 일 목록을 불러오는데 실패했습니다: $_errorMessage')),
+      );
+    }
+  }
+
+  Future<void> _addTask(String title) async {
     if (title.isNotEmpty) {
-      setState(() {
-        _tasks.add(Task(title: title));
-      });
-      _taskController.clear();
+      final newTask = Task(title: title); // ID는 서버에서 생성될 것으로 가정
+      try {
+        final addedTask = await _apiService.addTask(newTask);
+        setState(() {
+          _tasks.add(addedTask); // 서버로부터 받은 Task 객체 (ID 포함)를 추가
+        });
+        _taskController.clear();
+        Navigator.of(context).pop(); // 다이얼로그 닫기
+      } catch (e) {
+        // 오류 처리
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('할 일 추가에 실패했습니다: $e')),
+        );
+      }
     }
   }
 
-  void _editTask(int index, String newTitle) {
+  Future<void> _editTask(int index, String newTitle) async {
     if (newTitle.isNotEmpty) {
-      setState(() {
-        _tasks[index].title = newTitle;
-      });
+      Task taskToUpdate = _tasks[index];
+      Task updatedTaskData = Task(id: taskToUpdate.id, title: newTitle, status: taskToUpdate.status);
+      try {
+        final updatedTask = await _apiService.updateTask(updatedTaskData);
+        setState(() {
+          _tasks[index] = updatedTask;
+        });
+        Navigator.of(context).pop(); // 다이얼로그 닫기
+      } catch (e) {
+        // 오류 처리
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('할 일 수정에 실패했습니다: $e')),
+        );
+      }
     }
   }
 
-  void _deleteTask(int index) {
-    setState(() {
-      _tasks.removeAt(index);
-    });
+  Future<void> _deleteTask(int index) async {
+    final String? taskId = _tasks[index].id;
+    if (taskId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('삭제할 태스크의 ID가 없습니다.')),
+      );
+      return;
+    }
+    try {
+      await _apiService.deleteTask(taskId);
+      setState(() {
+        _tasks.removeAt(index);
+      });
+    } catch (e) {
+      // 오류 처리
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('할 일 삭제에 실패했습니다: $e')),
+      );
+    }
   }
 
-  void _toggleTaskStatus(int index) {
-    setState(() {
-      _tasks[index].isDone = !_tasks[index].isDone;
-    });
+  Future<void> _toggleTaskStatus(int index) async {
+    Task taskToToggle = _tasks[index];
+    Task updatedTaskData = Task(
+        id: taskToToggle.id,
+        title: taskToToggle.title,
+        status: taskToToggle.status=='Not Started'?'Started':'Not Started');
+    try {
+      final updatedTask = await _apiService.updateTask(updatedTaskData);
+      setState(() {
+        _tasks[index] = updatedTask;
+      });
+    } catch (e) {
+      // 오류 처리
+      // 원래 상태로 되돌릴 수도 있습니다.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('상태 변경에 실패했습니다: $e')),
+      );
+    }
   }
 
+  // _showAddTaskDialog, _submitTaskDialog, _showEditTaskDialog, _submitEditTaskDialog 메서드는
+  // 비동기 작업 (_addTask, _editTask)을 호출하도록 수정합니다.
+  // 예를 들어 _submitTaskDialog:
+  void _submitTaskDialog() {
+    // await를 사용하지 않고 _addTask를 호출합니다. _addTask 내부에서 Navigator.pop()을 처리합니다.
+    _addTask(_taskController.text);
+    // Navigator.of(context).pop(); // _addTask 또는 _editTask 내부로 이동
+  }
+
+  void _submitEditTaskDialog(int index) {
+    _editTask(index, _taskController.text);
+    // Navigator.of(context).pop(); // _addTask 또는 _editTask 내부로 이동
+  }
+
+
+  // _showAddTaskDialog 메서드 수정 (onSubmitted에서 _submitTaskDialog 호출)
   void _showAddTaskDialog() {
     _taskController.clear();
     showDialog(
@@ -73,7 +192,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
             controller: _taskController,
             autofocus: true,
             decoration: InputDecoration(hintText: '할 일을 입력하세요'),
-            onSubmitted: (_) => _submitTaskDialog(),
+            onSubmitted: (_) => _submitTaskDialog(), // 변경 없음
           ),
           actions: <Widget>[
             TextButton(
@@ -84,7 +203,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
             ),
             TextButton(
               child: Text('추가'),
-              onPressed: _submitTaskDialog,
+              onPressed: _submitTaskDialog, // 변경 없음
             ),
           ],
         );
@@ -92,11 +211,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     );
   }
 
-  void _submitTaskDialog() {
-    _addTask(_taskController.text);
-    Navigator.of(context).pop();
-  }
-
+  // _showEditTaskDialog 메서드 수정 (onSubmitted에서 _submitEditTaskDialog 호출)
   void _showEditTaskDialog(int index) {
     _taskController.text = _tasks[index].title;
     showDialog(
@@ -108,7 +223,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
             controller: _taskController,
             autofocus: true,
             decoration: InputDecoration(hintText: '새 할 일을 입력하세요'),
-            onSubmitted: (_) => _submitEditTaskDialog(index),
+            onSubmitted: (_) => _submitEditTaskDialog(index), // 변경 없음
           ),
           actions: <Widget>[
             TextButton(
@@ -119,7 +234,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
             ),
             TextButton(
               child: Text('저장'),
-              onPressed: () => _submitEditTaskDialog(index),
+              onPressed: () => _submitEditTaskDialog(index), // 변경 없음
             ),
           ],
         );
@@ -127,18 +242,36 @@ class _TodoListScreenState extends State<TodoListScreen> {
     );
   }
 
-  void _submitEditTaskDialog(int index) {
-    _editTask(index, _taskController.text);
-    Navigator.of(context).pop();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('오늘의 할 일'),
+        title: Text('오늘의 할 일 (API 연동)'),
+        actions: [ // 새로고침 버튼 추가 (선택 사항)
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: _fetchTasks,
+          ),
+        ],
       ),
-      body: _tasks.isEmpty
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('오류 발생: $_errorMessage', textAlign: TextAlign.center),
+            SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: _fetchTasks,
+              child: Text('다시 시도'),
+            )
+          ],
+        ),
+      )
+          : _tasks.isEmpty
           ? Center(child: Text('할 일이 없습니다. 추가해보세요!'))
           : ListView.builder(
         itemCount: _tasks.length,
@@ -146,13 +279,13 @@ class _TodoListScreenState extends State<TodoListScreen> {
           final task = _tasks[index];
           return ListTile(
             leading: Checkbox(
-              value: task.isDone,
+              value: task.status == 'Started'?true:false,
               onChanged: (_) => _toggleTaskStatus(index),
             ),
             title: Text(
               task.title,
               style: TextStyle(
-                decoration: task.isDone
+                decoration: task.status=='Started'
                     ? TextDecoration.lineThrough
                     : TextDecoration.none,
               ),
