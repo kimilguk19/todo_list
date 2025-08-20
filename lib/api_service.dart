@@ -3,7 +3,8 @@ import 'package:http/http.dart' as http;
 import 'main.dart'; // Task 모델을 가져오기 위함
 
 class ApiService {
-  // 실제 API의 기본 URL로 변경하세요.
+  // https://interior-sondra-kimilguk-app-99ae6359.koyeb.app/todolist 일때 int
+  // https://shrimo.com/fake-api/todos 일때 id가 String이기 때문에 dynamic형으로 변경
   static const String _baseUrl = 'https://shrimo.com/fake-api/todos'; // 예시 URL
 
   Future<List<Task>> getTasks() async {
@@ -68,7 +69,7 @@ class ApiService {
     }
   }
 
-  Future<void> deleteTask(String taskId) async {
+  Future<void> deleteTask(dynamic taskId) async {
     try {
       final response = await http.delete(
         Uri.parse('$_baseUrl/$taskId'), // ID를 URL에 포함
