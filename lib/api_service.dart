@@ -24,17 +24,32 @@ class ApiService {
   }
 
   Future<Task> addTask(Task task) async {
-
+    final newItem = { //주, 아래는 필수 값이고, 빠지면 신규 데이터가 입력이 되지 않는다.
+      'title': task.title,
+      'description': 'test',
+      'dueDate': DateTime.now().toString(),//'2025-07-15',
+      'priority': 'High',
+      'status': task.status,
+      'tags': ['test'],
+    }; // API 요구사항에 따라 위 처럼 필드를 추가할 수 있습니다.
     try {
       final response = await http.post(
         Uri.parse(_baseUrl),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
-        body: jsonEncode(task.toJson()),
+        body: jsonEncode(newItem), //task.toJson() 대신 API요구사항으로 필드추가처리
       );
       if (response.statusCode == 201) { // 201 Created
-        return Task.fromJson(json.decode(response.body));
+        //return Task.fromJson(json.decode(response.body));
+        print(response.body);
+        Map<String, dynamic> jsonResponse = json.decode(response.body)['data'];
+        // 키 변경이 필요하다.
+        if (jsonResponse.containsKey('id')) {
+          jsonResponse['_id'] = jsonResponse.remove('id');
+        }
+        print(jsonResponse);
+        return Task.fromJson(jsonResponse);
       } else {
         throw Exception(
             'Failed to add task (Status Code: ${response.statusCode})');
@@ -58,7 +73,15 @@ class ApiService {
         body: jsonEncode(task.toJson()),
       );
       if (response.statusCode == 200) {
-        return Task.fromJson(json.decode(response.body));
+        //return Task.fromJson(json.decode(response.body));
+        print(response.body);
+        Map<String, dynamic> jsonResponse = json.decode(response.body)['data'];
+        // 키 변경이 필요하다.
+        if (jsonResponse.containsKey('id')) {
+          jsonResponse['_id'] = jsonResponse.remove('id');
+        }
+        print(jsonResponse);
+        return Task.fromJson(jsonResponse);
       } else {
         throw Exception(
             'Failed to update task (Status Code: ${response.statusCode})');

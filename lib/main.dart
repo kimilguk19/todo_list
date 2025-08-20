@@ -94,7 +94,8 @@ class _TodoListScreenState extends State<TodoListScreen> {
       try {
         final addedTask = await _apiService.addTask(newTask);
         setState(() {
-          _tasks.add(addedTask); // 서버로부터 받은 Task 객체 (ID 포함)를 추가
+          //_tasks.add(addedTask); // 서버로부터 받은 Task 객체 (ID 포함)를 추가
+          _tasks.insert(0, addedTask); // 리스트의 맨 앞에 추가
         });
         _taskController.clear();
         Navigator.of(context).pop(); // 다이얼로그 닫기
@@ -250,6 +251,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('오늘의 할 일 (API 연동)'),
+        backgroundColor: Colors.lightBlueAccent, // 여름 색상으로 변경 (예: 하늘색)
         actions: [ // 새로고침 버튼 추가 (선택 사항)
           IconButton(
             icon: Icon(Icons.refresh),
@@ -279,33 +281,43 @@ class _TodoListScreenState extends State<TodoListScreen> {
         itemCount: _tasks.length,
         itemBuilder: (context, index) {
           final task = _tasks[index];
-          return ListTile(
-            leading: Checkbox(
-              value: task.status == 'Started'?true:false,
-              onChanged: (_) => _toggleTaskStatus(index),
+          // 인덱스에 따라 배경색 결정
+          final itemBackgroundColor = index.isEven
+              ? Colors.grey[200]  // 짝수 항목 배경색
+              : Colors.white;     // 홀수 항목 배경색
+          return Container(
+            decoration: BoxDecoration(
+              color: itemBackgroundColor,
+              border: Border(bottom: BorderSide(color: Colors.grey)),
             ),
-            title: Text(
-              task.title,
-              style: TextStyle(
-                decoration: task.status=='Started'
-                    ? TextDecoration.lineThrough
-                    : TextDecoration.none,
+            child: ListTile(
+              leading: Checkbox(
+                value: task.status == 'Started'?true:false,
+                onChanged: (_) => _toggleTaskStatus(index),
               ),
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.edit),
-                  onPressed: () => _showEditTaskDialog(index),
+              title: Text(
+                task.title,
+                style: TextStyle(
+                  decoration: task.status=='Started'
+                      ? TextDecoration.lineThrough
+                      : TextDecoration.none,
                 ),
-                IconButton(
-                  icon: Icon(Icons.delete),
-                  onPressed: () => _deleteTask(index),
-                ),
-              ],
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.edit),
+                    onPressed: () => _showEditTaskDialog(index),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.delete),
+                    onPressed: () => _deleteTask(index),
+                  ),
+                ],
+              ),
+              onTap: () => _toggleTaskStatus(index),
             ),
-            onTap: () => _toggleTaskStatus(index),
           );
         },
       ),
