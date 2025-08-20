@@ -8,7 +8,7 @@ void main() {
 class Task {
   // https://interior-sondra-kimilguk-app-99ae6359.koyeb.app/todolist 일때 int
   // https://shrimo.com/fake-api/todos 일때 id가 String이기 때문에 dynamic형으로 변경
-  dynamic? id; // API에서 사용하는 ID (Nullable로 변경 또는 기본값 설정)
+  dynamic id; // API에서 사용하는 ID (Nullable로 변경 또는 기본값 설정)
   String title;
   String status;
 
@@ -17,7 +17,7 @@ class Task {
   // API 응답(JSON)을 Task 객체로 변환하는 factory 생성자
   factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
-      id: json['_id'] as dynamic?, // API 필드명에 맞게 수정
+      id: json['_id'] as dynamic, // API 필드명에 맞게 수정
       title: json['title'] as String,
       status: json['status'] as String? ?? 'Not Started', // API 필드명 및 기본값 설정
     );
@@ -128,7 +128,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
   }
 
   Future<void> _deleteTask(int index) async {
-    final dynamic? taskId = _tasks[index].id;
+    final dynamic taskId = _tasks[index].id;
     if (taskId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('삭제할 태스크의 ID가 없습니다.')),
