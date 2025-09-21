@@ -17,7 +17,7 @@ class Task {
   // API 응답(JSON)을 Task 객체로 변환하는 factory 생성자
   factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
-      id: json['_id'] as dynamic, // API 필드명에 맞게 수정
+      id: json['id'] as dynamic, // API 필드명에 맞게 수정 _id
       title: json['title'] as String,
       status: json['status'] as String? ?? 'Not Started', // API 필드명 및 기본값 설정
     );
@@ -26,7 +26,7 @@ class Task {
   // Task 객체를 JSON으로 변환하는 메서드 (POST, PUT 요청 시 사용)
   Map<String, dynamic> toJson() {
     return {
-      '_id': id, // id는 서버에서 생성될 경우 보내지 않을 수 있음
+      'id': id, // _id는 서버에서 생성될 경우 보내지 않을 수 있음
       'title': title,
       'status': status,
     };
