@@ -1,11 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'api_service.dart'; // ApiService 임포트
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+// 웹 플랫폼인지 확인하기 위한 import
+import 'package:flutter/foundation.dart' show kIsWeb;
 
-void main() {
+void main() async {
+  // 웹 환경에서 카카오 로그인을 정상적으로 완료하려면 runApp() 호출 전 아래 메서드 호출 필요
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 여기에 카카오 SDK 초기화 코드를 추가합니다.
+  // 앱 실행 전 SDK 초기화 Flutter.onErrorBinding 핸들러는 KakaoSdk.init() 내부에서 초기화합니다.
+  // KakaoSdk.init()으로 초기화 되어야 하는 플러그인을 사용할 경우 명시적으로 초기화하지 않아도 사용 가능합니다.
+  try {
+    KakaoSdk.init(
+      nativeAppKey: 'YOUR_NATIVE_APP_KEY', // 네이티브 앱 키 (Android/iOS 용) - 웹에서는 사용되지 않을 수 있음
+      javaScriptAppKey: '58e3e66717008e67f47f0b53356b63a7', // 카카오 개발자 콘솔의 JavaScript 키
+    );
+    print('Kakao SDK initialized successfully');
+  } catch (e) {
+    print('Failed to initialize Kakao SDK: $e');
+  }
+
   runApp(MyApp());
 }
 
-class Task {
+  class Task {
   // https://interior-sondra-kimilguk-app-99ae6359.koyeb.app/todolist 일때 int
   // https://shrimo.com/fake-api/todos 일때 id가 String이기 때문에 dynamic형으로 변경
   dynamic id; // API에서 사용하는 ID (Nullable로 변경 또는 기본값 설정)
@@ -16,11 +36,11 @@ class Task {
 
   // API 응답(JSON)을 Task 객체로 변환하는 factory 생성자
   factory Task.fromJson(Map<String, dynamic> json) {
-    return Task(
-      id: json['id'] as dynamic, // API 필드명에 맞게 수정 json['_id']
-      title: json['title'] as String,
-      status: json['status'] as String? ?? 'Not Started', // API 필드명 및 기본값 설정
-    );
+  return Task(
+  id: json['id'] as dynamic, // API 필드명에 맞게 수정 json['_id']
+  title: json['title'] as String,
+  status: json['status'] as String? ?? 'Not Started', // API 필드명 및 기본값 설정
+  );
   }
 
   // Task 객체를 JSON으로 변환하는 메서드 (POST, PUT 요청 시 사용)
@@ -59,6 +79,82 @@ class _TodoListScreenState extends State<TodoListScreen> {
   bool _isLoading = true; // 로딩 상태
   String? _errorMessage; // 오류 메시지
 
+  User? _loggedInUser; //* 카카오 사용자 정보
+  // 카카오 로그인 시도 함수
+  Future<void> _signInWithKakao() async {
+    // 카카오톡 실행 가능 여부 확인
+    // 카카오톡 실행이 가능하면 카카오톡으로 로그인, 아니면 카카오계정으로 로그인
+    if (await isKakaoTalkInstalled()) {
+      try {
+        await UserApi.instance.loginWithKakaoTalk();
+        print('카카오톡으로 로그인 성공');
+        _getUserInfo(); // 로그인 성공 후 사용자 정보 가져오기
+      } catch (error) {
+        print('카카오톡으로 로그인 실패 $error');
+
+        // 사용자가 카카오톡 설치 후 디바이스 권한 요청 화면에서 로그인을 취소한 경우,
+        // 의도적인 로그인 취소로 보고 카카오계정으로 로그인 시도 없이 로그인 취소로 처리 (예: 뒤로 가기)
+        if (error is PlatformException && error.code == 'CANCELED') {
+          return;
+        }
+        // 카카오톡에 연결된 카카오계정이 없는 경우, 카카오계정으로 로그인
+        try {
+          await UserApi.instance.loginWithKakaoAccount();
+          print('카카오계정으로 로그인 성공');
+          _getUserInfo();
+        } catch (error) {
+          print('카카오계정으로 로그인 실패 $error');
+          // 로그인 실패 처리 (예: 스낵바 메시지)
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('카카오 로그인에 실패했습니다: $error')),
+          );
+        }
+      }
+    } else {
+      try {
+        await UserApi.instance.loginWithKakaoAccount();
+        print('카카오계정으로 로그인 성공');
+        _getUserInfo();
+      } catch (error) {
+        print('카카오계정으로 로그인 실패 $error');
+        // 로그인 실패 처리
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('카카오 로그인에 실패했습니다: $error')),
+        );
+      }
+    }
+  }
+
+// 사용자 정보 가져오기 함수
+  Future<void> _getUserInfo() async {
+    try {
+      User user = await UserApi.instance.me();
+      print('사용자 정보 요청 성공'
+          '\n회원번호: ${user.id}'
+          '\n닉네임: ${user.kakaoAccount?.profile?.nickname}'
+          '\n이메일: ${user.kakaoAccount?.email}');
+      //* TODO: 가져온 사용자 정보를 앱 상태에 저장하거나 화면에 표시
+      setState(() { _loggedInUser = user; });
+      _fetchTasks(); //* 사용자 정보 요청 후 할 일 목록을 가져옵니다.
+      // 예: Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => TodoListScreen(user: user)));
+    } catch (error) {
+      print('사용자 정보 요청 실패 $error');
+    }
+  }
+
+// 로그아웃 함수 (선택 사항)
+  Future<void> _signOutFromKakao() async {
+    try {
+      await UserApi.instance.logout();
+      print('카카오 로그아웃 성공');
+      //* TODO: 로그아웃 후 처리 (예: 로그인 화면으로 이동)
+      setState(() { _loggedInUser = null; });
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => TodoListScreen())); //* 화면새로고침
+    } catch (error) {
+      print('카카오 로그아웃 실패 $error');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -70,8 +166,9 @@ class _TodoListScreenState extends State<TodoListScreen> {
       _isLoading = true;
       _errorMessage = null;
     });
+    print('여기 ${_loggedInUser?.id}');
     try {
-      final tasks = await _apiService.getTasks();
+      final tasks = await _apiService.getTasks((_loggedInUser?.id).toString()); //*
       setState(() {
         _tasks = tasks;
         _isLoading = false;
@@ -256,6 +353,19 @@ class _TodoListScreenState extends State<TodoListScreen> {
           IconButton(
             icon: Icon(Icons.refresh),
             onPressed: _fetchTasks,
+          ),
+          (_loggedInUser != null)
+          ?Text('안녕 ${_loggedInUser!.id} 님'):Text('로그인 하세요'),
+          (_loggedInUser != null)
+          ?IconButton(
+            icon: Icon(Icons.logout),
+            onPressed: _signOutFromKakao, //* 로그인 버튼에 함수 연결
+            tooltip: '카카오 로그아웃',
+          )
+          :IconButton(
+            icon: Icon(Icons.login),
+            onPressed: _signInWithKakao, //* 로그인 버튼에 함수 연결
+            tooltip: '카카오 로그인',
           ),
         ],
       ),

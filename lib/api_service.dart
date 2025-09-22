@@ -7,9 +7,11 @@ class ApiService {
   // https://shrimo.com/fake-api/todos 일때 id가 String이기 때문에 dynamic형으로 변경
   static const String _baseUrl = 'http://localhost:8888/todolist'; // 예시 URL
 
-  Future<List<Task>> getTasks() async {
+  Future<List<Task>> getTasks(description) async { //* description을 조회조건으로 사용
+    if(description=='null')description='test'; //* test용 자료만
+    print(description); //* 디버그
     try {
-      final response = await http.get(Uri.parse(_baseUrl));
+      final response = await http.get(Uri.parse('${_baseUrl}/?description=$description')); //*
       if (response.statusCode == 200) {
         Iterable list = json.decode(response.body);
         return list.map((model) => Task.fromJson(model)).toList().reversed.toList();//역순
