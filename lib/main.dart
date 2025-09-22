@@ -25,7 +25,7 @@ void main() async {
   runApp(MyApp());
 }
 
-  class Task {
+  class Task { //* 회원조회에 사용할 description 필드 추가예정.
   // https://interior-sondra-kimilguk-app-99ae6359.koyeb.app/todolist 일때 int
   // https://shrimo.com/fake-api/todos 일때 id가 String이기 때문에 dynamic형으로 변경
   dynamic id; // API에서 사용하는 ID (Nullable로 변경 또는 기본값 설정)
@@ -168,7 +168,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     });
     print('여기 ${_loggedInUser?.id}');
     try {
-      final tasks = await _apiService.getTasks((_loggedInUser?.id).toString()); //*
+      final tasks = await _apiService.getTasks((_loggedInUser?.id).toString()); //* DB조회조건 추가
       setState(() {
         _tasks = tasks;
         _isLoading = false;
@@ -359,7 +359,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
           (_loggedInUser != null)
           ?IconButton(
             icon: Icon(Icons.logout),
-            onPressed: _signOutFromKakao, //* 로그인 버튼에 함수 연결
+            onPressed: _signOutFromKakao, //* 로그아웃 버튼에 함수 연결
             tooltip: '카카오 로그아웃',
           )
           :IconButton(

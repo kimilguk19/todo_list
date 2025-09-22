@@ -64,7 +64,7 @@ class ApiService {
     }
   }
 
-  Future<Task> updateTask(Task task) async {
+  Future<Task> updateTask(Task task) async { //* 시간이되면 회원수정조건 추가(조회참조)
     if (task.id == null) {
       throw Exception('Task ID cannot be null for update');
     }
@@ -98,7 +98,7 @@ class ApiService {
     }
   }
 
-  Future<void> deleteTask(dynamic taskId) async {
+  Future<void> deleteTask(dynamic taskId) async { //* 시간이되면 회원삭제조건 추가(조회참조)
     try {
       final response = await http.delete(
         Uri.parse('$_baseUrl/$taskId'), // ID를 URL에 포함
