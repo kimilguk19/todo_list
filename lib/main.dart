@@ -24,22 +24,23 @@ void main() async {
   runApp(MyApp());
 }
 
-  class Task { //* 회원조회에 사용할 description 필드 추가예정.
+class Task { //* 회원조회에 사용할 description 필드 추가예정.
   // https://interior-sondra-kimilguk-app-99ae6359.koyeb.app/todolist 일때 int
   // https://shrimo.com/fake-api/todos 일때 id가 String이기 때문에 dynamic형으로 변경
   dynamic id; // API에서 사용하는 ID (Nullable로 변경 또는 기본값 설정)
   String title;
   String status;
-
-  Task({this.id, required this.title, this.status = 'Not Started'});
+  dynamic description;
+  Task({this.id, required this.title, this.status = 'Not Started', this.description});
 
   // API 응답(JSON)을 Task 객체로 변환하는 factory 생성자
   factory Task.fromJson(Map<String, dynamic> json) {
-  return Task(
-  id: json['id'] as dynamic, // API 필드명에 맞게 수정 json['_id']
-  title: json['title'] as String,
-  status: json['status'] as String? ?? 'Not Started', // API 필드명 및 기본값 설정
-  );
+    return Task(
+      id: json['id'] as dynamic, // API 필드명에 맞게 수정 json['_id']
+      title: json['title'] as String,
+      status: json['status'] as String? ?? 'Not Started', // API 필드명 및 기본값 설정
+      description: json['description'] as dynamic,
+    );
   }
 
   // Task 객체를 JSON으로 변환하는 메서드 (POST, PUT 요청 시 사용)
@@ -48,6 +49,7 @@ void main() async {
       'id': id, // '_id':id는 서버에서 생성될 경우 보내지 않을 수 있음
       'title': title,
       'status': status,
+      'description': description,
     };
   }
 }
@@ -186,7 +188,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
 
   Future<void> _addTask(String title) async {
     if (title.isNotEmpty) {
-      final newTask = Task(title: title); // ID는 서버에서 생성될 것으로 가정
+      final newTask = Task(title: title, description: _loggedInUser!.id); // ID는 서버에서 생성될 것으로 가정
       try {
         final addedTask = await _apiService.addTask(newTask);
         setState(() {
@@ -207,7 +209,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
   Future<void> _editTask(int index, String newTitle) async {
     if (newTitle.isNotEmpty) {
       Task taskToUpdate = _tasks[index];
-      Task updatedTaskData = Task(id: taskToUpdate.id, title: newTitle, status: taskToUpdate.status);
+      Task updatedTaskData = Task(id: taskToUpdate.id, title: newTitle, status: taskToUpdate.status, description: _loggedInUser!.id);
       try {
         final updatedTask = await _apiService.updateTask(updatedTaskData);
         setState(() {
@@ -354,14 +356,14 @@ class _TodoListScreenState extends State<TodoListScreen> {
             onPressed: _fetchTasks,
           ),
           (_loggedInUser != null)
-          ?Text('안녕 ${_loggedInUser!.id} 님'):Text('로그인 하세요'),
+              ?Text('안녕 ${_loggedInUser!.id} 님'):Text('로그인 하세요'),
           (_loggedInUser != null)
-          ?IconButton(
+              ?IconButton(
             icon: Icon(Icons.logout),
             onPressed: _signOutFromKakao, //* 로그아웃 버튼에 함수 연결
             tooltip: '카카오 로그아웃',
           )
-          :IconButton(
+              :IconButton(
             icon: Icon(Icons.login),
             onPressed: _signInWithKakao, //* 로그인 버튼에 함수 연결
             tooltip: '카카오 로그인',

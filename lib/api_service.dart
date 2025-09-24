@@ -28,7 +28,7 @@ class ApiService {
   Future<Task> addTask(Task task) async {
     final newItem = { //주, 아래는 필수 값이고, 빠지면 신규 데이터가 입력이 되지 않는다.
       'title': task.title,
-      'description': 'test',
+      'description': task.description,//'test'
       'dueDate': DateTime.now().toString(),//'2025-07-15',
       'priority': 'High',
       'status': task.status,
