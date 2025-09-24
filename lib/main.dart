@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show PlatformException;
 import 'api_service.dart'; // ApiService 임포트
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
-// 웹 플랫폼인지 확인하기 위한 import
-import 'package:flutter/foundation.dart' show kIsWeb;
+// 카카오로그인 취소로 뒤로가기 기능이 필요할 때 예외처리 사용(아래)
+import 'package:flutter/services.dart' show PlatformException;
 
 void main() async {
   // 웹 환경에서 카카오 로그인을 정상적으로 완료하려면 runApp() 호출 전 아래 메서드 호출 필요
