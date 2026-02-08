@@ -26,7 +26,7 @@ class Task {
   // Task 객체를 JSON으로 변환하는 메서드 (POST, PUT 요청 시 사용)
   Map<String, dynamic> toJson() {
     return {
-      //'_id': id, // id는 서버 자동생성되어서 주석처리
+      //'_id': id, // id는 서버에서 자동생성되기때문에 주석처리
       'title': title,
       'status': status,
     };
