@@ -5,7 +5,7 @@ import 'main.dart'; // Task 모델을 가져오기 위함
 class ApiService {
   // https://interior-sondra-kimilguk-app-99ae6359.koyeb.app/todolist 일때 int
   // https://shrimo.com/fake-api/todos 일때 id가 String이기 때문에 dynamic형으로 변경
-  static const String _baseUrl = 'https://shrimo.com/fake-api/todos'; // 예시 URL
+  static const String _baseUrl = 'https://interior-sondra-kimilguk-app-99ae6359.koyeb.app/todolist'; // 예시 URL
 
   Future<List<Task>> getTasks() async {
     try {
@@ -43,10 +43,16 @@ class ApiService {
       if (response.statusCode == 201) { // 201 Created
         //return Task.fromJson(json.decode(response.body));
         print(response.body);
-        Map<String, dynamic> jsonResponse = json.decode(response.body)['data'];
-        // 키 변경이 필요하다.
-        if (jsonResponse.containsKey('id')) {
-          jsonResponse['_id'] = jsonResponse.remove('id');
+        //Map<String, dynamic> jsonResponse = json.decode(response.body)['data'];
+        Map<String, dynamic> jsonResponse = {};
+        if(json.decode(response.body)['data'] == null) {
+          jsonResponse = json.decode(response.body);
+        }else {
+          jsonResponse = json.decode(response.body)['data'];
+          // 키 변경이 필요하다.
+          if (jsonResponse.containsKey('id')) {
+            jsonResponse['_id'] = jsonResponse.remove('id');
+          }
         }
         print(jsonResponse);
         return Task.fromJson(jsonResponse);
@@ -72,13 +78,21 @@ class ApiService {
         },
         body: jsonEncode(task.toJson()),
       );
+      print(task.id);
+      print(task.toJson());
       if (response.statusCode == 200) {
         //return Task.fromJson(json.decode(response.body));
         print(response.body);
-        Map<String, dynamic> jsonResponse = json.decode(response.body)['data'];
-        // 키 변경이 필요하다.
-        if (jsonResponse.containsKey('id')) {
-          jsonResponse['_id'] = jsonResponse.remove('id');
+        //Map<String, dynamic> jsonResponse = json.decode(response.body)['data'];
+        Map<String, dynamic> jsonResponse = {};
+        if(json.decode(response.body)['data'] == null) {
+          jsonResponse = json.decode(response.body);
+        }else {
+          jsonResponse = json.decode(response.body)['data'];
+          // 키 변경이 필요하다.
+          if (jsonResponse.containsKey('id')) {
+            jsonResponse['_id'] = jsonResponse.remove('id');
+          }
         }
         print(jsonResponse);
         return Task.fromJson(jsonResponse);
