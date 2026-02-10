@@ -41,7 +41,6 @@ class ApiService {
         body: jsonEncode(newItem), //task.toJson() 대신 API요구사항으로 필드추가처리
       );
       if (response.statusCode == 201) { // 201 Created
-        //return Task.fromJson(json.decode(response.body));
         //Map<String, dynamic> jsonResponse = json.decode(response.body)['data'];
         //return Task.fromJson(json.decode(response.body));
         print(response.body);
