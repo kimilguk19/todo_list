@@ -43,16 +43,15 @@ class ApiService {
         body: jsonEncode(newItem), //task.toJson() 대신 API요구사항으로 필드추가처리
       );
       if (response.statusCode == 201) { // 201 Created
+        //Map<String, dynamic> jsonResponse = json.decode(response.body)['data'];
         //return Task.fromJson(json.decode(response.body));
         print(response.body);
-        Map<String, dynamic> jsonResponse = json.decode(response.body);//['data'];
-        /*
-        // 키 변경이 필요하다.
-        if (jsonResponse.containsKey('id')) {
-          jsonResponse['_id'] = jsonResponse.remove('id');
+        Map<String, dynamic> jsonResponse = {}; // 조건문 처리결과를 지정할 맵 변수생성
+        if(json.decode(response.body)['data'] == null) { // 시리모 API와 호환되게 조건
+          jsonResponse = json.decode(response.body); // 강사 API 사용 시 기존코드 사용
+        }else {
+          jsonResponse = json.decode(response.body)['data']; // 시리모 API에 맞게 수정
         }
-        */
-        print(jsonResponse);
         return Task.fromJson(jsonResponse);
       } else {
         throw Exception(
@@ -77,16 +76,15 @@ class ApiService {
         body: jsonEncode(task.toJson()),
       );
       if (response.statusCode == 200) {
+        //Map<String, dynamic> jsonResponse = json.decode(response.body)['data'];
         //return Task.fromJson(json.decode(response.body));
         print(response.body);
-        Map<String, dynamic> jsonResponse = json.decode(response.body);//['data'];
-        /*
-        // 키 변경이 필요하다.
-        if (jsonResponse.containsKey('id')) {
-          jsonResponse['_id'] = jsonResponse.remove('id');
+        Map<String, dynamic> jsonResponse = {}; // 조건문 처리결과를 지정할 맵 변수생성
+        if(json.decode(response.body)['data'] == null) { // 시리모 API와 호환되게 조건
+          jsonResponse = json.decode(response.body); // 강사 API 사용 시 기존코드 사용
+        }else {
+          jsonResponse = json.decode(response.body)['data']; // 시리모 API에 맞게 수정
         }
-       */
-        print(jsonResponse);
         return Task.fromJson(jsonResponse);
       } else {
         throw Exception(
