@@ -5,7 +5,7 @@ import 'main.dart'; // Task 모델을 가져오기 위함
 class ApiService {
   // https://interior-sondra-kimilguk-app-99ae6359.koyeb.app/todolist 일때 int
   // https://shrimo.com/fake-api/todos 일때 id가 String이기 때문에 dynamic형으로 변경
-  static const String _baseUrl = 'https://interior-sondra-kimilguk-app-99ae6359.koyeb.app/todolist'; // 예시 URL
+  static const String _baseUrl = 'https://shrimo.com/fake-api/todos'; // 예시 URL
 
   Future<List<Task>> getTasks() async {
     try {
@@ -85,11 +85,11 @@ class ApiService {
         return Task.fromJson(jsonResponse);
       } else {
         throw Exception(
-            'Failed to update task (Status Code: ${response.statusCode})');
+            'Failed to update task (Status Code: ${response.statusCode})'); // Response응답에러
       }
     } catch (e) {
-      print('Error updating task: $e');
-      throw Exception('Failed to update task: $e');
+      print('Put Error updating task: $e');
+      throw Exception('Put Failed to update task: $e'); // API Put 실패시 예외처리
     }
   }
 
